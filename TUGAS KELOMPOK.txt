@@ -1,0 +1,105 @@
+Store Procedure:
+
+hint:
+
+Kolom dibaca dari tabel customers
+id_pelanggan = customerNumber (INPUT); nama_pelanggan = customerName (OUTPUT)
+Kolom dihitung dari tabel Orders
+shipped = Jumlah order yang terkirim (OUTPUT); cancelled = Jumlah order yang di batalkan (OUTPUT)
+Simpan store procedure tersebut dalam SERVER DATABASE yang telah diberikan
+
+coding:
+
+DELIMITER //
+
+create procedure getOrderStatus152(
+in cust_no int,
+out cust_num int,
+out cust_name varchar(50),
+out Shipped int,
+out Cancelled int)
+
+BEGIN
+select customerNumber into cust_num
+from customers 
+where customerNumber=cust_no;
+
+select customerName into cust_name
+from customers
+where customerNumber=cust_no;
+
+select count(*) into Shipped 
+from orders 
+where customerNumber=cust_no
+AND status="Shipped";
+
+
+select count(*) into Cancelled
+from orders 
+where customerNumber=cust_no
+AND status="Cancelled";
+
+END
+//
+
+DELIMITER ;
+
+---------------------
+cara memanggil:
+1. call namaprocedure( 103, @cust_num, @cust_name, @Shipped, @Cancelled);
+*103 = bisa disesuaikan dengan nomer customer yang mau dipanggil
+
+2. select cust_num, @cust_name, @Shipped, @Cancelled;
+
+
+View : 
+
+CREATE VIEW SalePerOrder AS
+SELECT 
+orderNumber, SUM(quantityOrdered * priceEach) total
+FROM
+orderdetails
+GROUP by orderNumber
+ORDER BY total DESC;
+
+SELECT * FROM salePerOrder;
+
+
+CREATE VIEW customerOrders AS
+SELECT 
+d.orderNumber,
+customerName,
+SUM(quantityOrdered * priceEach) total
+FROM
+orderdetails d
+INNER JOIN
+orders o ON o.orderNumber = d.orderNumber
+INNER JOIN
+customers c ON c.customerNumber = c.customerNumber
+GROUP BY d.orderNumber
+ORDER BY total DESC;
+
+
+
+Trigger :
+
+CREATE TABLE employees_audit (id INT AUTO_INCREMENT PRIMARY KEY,
+employeeNumber INT NOT NULL,
+lastname VARCHAR(50) NOT NULL,
+changedat DATETIME DEFAULT NULL,
+action VARCHAR(50) DEFAULT NULL
+);
+
+
+DELIMITER $$
+CREATE TRIGGER before_employee_update 
+BEFORE UPDATE ON employees
+FOR EACH ROW 
+BEGIN
+INSERT INTO employees_audit
+SET action = 'update',
+employeeNumber = OLD.employeeNumber,
+lastname = OLD.lastname,
+changedat = NOW(); 
+END$$
+DELIMITER ;
